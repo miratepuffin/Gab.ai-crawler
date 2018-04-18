@@ -13,14 +13,11 @@ r = redis.Redis(
     port=6379)
 
 
-value = r.get('foo')
-print(value)
-
-for x in range(1, 30000000):
+for x in range(1, 10):
     try:
         r.set(str(x), getThyPage(x))
         print("Post "+str(x)+" Success")
-        value = r.get(str())
+        #print(r.get(str(x)))
     except HTTPError:
         pass
         #print("Post "+str(x)+" Unavailable")
