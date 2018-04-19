@@ -2,6 +2,10 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 import redis
 
+from multiprocessing import Process,Queue,Value
+import time
+import sched
+
 def getThyPage(postCount):
     req = Request('https://gab.ai/posts/'+str(postCount), headers={'User-Agent': 'Mozilla/5.0'}) #Pretend to be Mozilla
     webpage = urlopen(req).read()
