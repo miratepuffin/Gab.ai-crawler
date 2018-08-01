@@ -1,7 +1,10 @@
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
-import redis
+import pymongo
 from multiprocessing import Pool
+from pymongo import MongoClient
+import redis
+
 
 
 def getThyPage(postCount):
@@ -21,8 +24,27 @@ def saveToRedis(x):
     except (KeyboardInterrupt, SystemExit):
         sys.exit()
 
-print("Starting scraper")
+def saveToMongo(x):
+    client = MongoClient()
+    db = client.gab
+    posts = db.posts
+    try:
+         post = {"_id": x, "data":getThyPage(x)}
+         posts.insert_one(post)
+         r.lpush("gab-posts", x) #and add successful posts to the list to know where to continue from if we crash
+         #print(r.get(str(x)))
+    except HTTPError:
+        r.lpush("gab-broken-posts", x)
+        #print("Post "+str(x)+" Unavailable")
+    except (KeyboardInterrupt, SystemExit):
+        sys.exit()
+
+
+
+
+
 r = redis.Redis(host='localhost',port=6379)
+print("Starting scraper")
 goodPosts = [int(x) for x in r.lrange("gab-posts",0,-1)]
 print("Pulled all good posts")
 brokePosts = [int(x) for x in r.lrange("gab-broken-posts",0,-1)]
@@ -34,5 +56,5 @@ leftPosts = [x for x in set(range(1, 25000000)) if x not in allposts] #removed p
 
 print(str(len(allposts)) + " posts checked " + str(len(leftPosts)) + " remaining.")
 
-with Pool(200) as p:
-    p.map(saveToRedis, leftPosts)
+with Pool(4) as p:
+    p.map(saveToMongo, leftPosts)
